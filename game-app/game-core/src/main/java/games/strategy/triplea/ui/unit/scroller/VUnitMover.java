@@ -1,26 +1,21 @@
 package games.strategy.triplea.ui.unit.scroller;
 
 import games.strategy.engine.data.*;
-import games.strategy.triplea.attachments.TerritoryAttachment;
+import games.strategy.triplea.attachments.UnitAttachment;
 import games.strategy.triplea.delegate.Matches;
-import games.strategy.triplea.settings.ClientSetting;
 import games.strategy.triplea.ui.MouseDetails;
 import games.strategy.triplea.ui.panels.map.MapPanel;
 import games.strategy.triplea.ui.panels.map.MapSelectionListener;
-import org.triplea.java.PredicateBuilder;
-import org.triplea.java.collections.CollectionUtils;
-import org.triplea.swing.CollapsiblePanel;
-import org.triplea.swing.DialogBuilder;
-import org.triplea.swing.JLabelBuilder;
-import org.triplea.swing.SwingComponents;
-import org.triplea.swing.jpanel.JPanelBuilder;
+import games.strategy.triplea.ui.panels.map.UnitSelectionListener;
 
 import javax.annotation.Nullable;
-import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Unit scroller is a UI component to 'scroll' through units that can be moved. The component is to
@@ -32,112 +27,186 @@ import java.util.function.Supplier;
  * <p>The unit scroller keeps track of state to know which territory is current.
  */
 public class VUnitMover {
-    //public static VUnitMover main;
-
-    private Territory lastFocusedTerritory;
+    public static VUnitMover main;
 
     private final GameData gameData;
     private final MapPanel mapPanel;
-
     public VUnitMover(final GameData data, final MapPanel mapPanel, final Supplier<Boolean> parentPanelIsVisible) {
-        //main = this;
+        main = this;
 
         this.gameData = data;
         this.mapPanel = mapPanel;
-
-        gameData.addGameDataEventListener(GameDataEvent.GAME_STEP_CHANGED, this::gamePhaseChanged);
-
-        mapPanel.addMapSelectionListener(
-                new MapSelectionListener() {
-                    @Override
-                    public void territorySelected(final Territory territory, final MouseDetails md) {
-                    }
-
-                    @Override
-                    public void mouseEntered(@Nullable final Territory territory) {
-                        if (parentPanelIsVisible.get() && territory != null) {
-                            lastFocusedTerritory = territory;
-                        }
-                    }
-
-                    @Override
-                    public void mouseMoved(@Nullable final Territory territory, final MouseDetails md) {
-                    }
-                });
-    }
-
-    private void gamePhaseChanged() {
-        lastFocusedTerritory = null;
-    }
-
-    public void leftAction() {
-        centerOnMovableUnit(false);
-    }
-
-    public void rightAction() {
-        centerOnMovableUnit(true);
-    }
-
-    private void centerOnMovableUnit(final boolean selectNext) {
-        List<Territory> allTerritories_orig = gameData.getMap().getTerritories();
-
-        // sort territories by x-pos
-        var allTerritories = new ArrayList<>(allTerritories_orig);
-        allTerritories.sort((a, b)->{
-            /*var aRect = this.mapPanel.getUiContext().getMapData().getBoundingRect(a);
-            var bRect = this.mapPanel.getUiContext().getMapData().getBoundingRect(b);
-            return Comparator.<Integer>naturalOrder().compare(aRect.x, bRect.x);*/
+        allTerritories_sorted = new ArrayList<>(gameData.getMap().getTerritories());
+        allTerritories_sorted.sort((a, b)->{
             var aCenter = this.mapPanel.getUiContext().getMapData().getCenter(a);
             var bCenter = this.mapPanel.getUiContext().getMapData().getCenter(b);
             return Comparator.<Integer>naturalOrder().compare(aCenter.x, bCenter.x);
         });
 
-        if (!selectNext) {
-            final var territories = new ArrayList<>(allTerritories);
-            Collections.reverse(territories);
-            allTerritories = territories;
-        }
-        // new focused index is 1 greater
-        int newFocusedIndex =
-                lastFocusedTerritory == null ? 0 : allTerritories.indexOf(lastFocusedTerritory) + 1;
-        if (newFocusedIndex >= allTerritories.size()) {
-            // if we are larger than the number of territories, we must start back at zero
-            newFocusedIndex = 0;
-        }
-        Territory newFocusedTerritory = null;
-        // make sure we go through every single territory on the board
-        for (int i = 0; i < allTerritories.size(); i++) {
-            final Territory t = allTerritories.get(newFocusedIndex);
-            //final List<Unit> matchedUnits = getMovableUnits(t);
-            final List<Unit> matchedUnits = UnitScroller.main.getMovableUnits(t);
-
-            if (!matchedUnits.isEmpty()) {
-                newFocusedTerritory = t;
-                mapPanel.setUnitHighlight(Set.of(matchedUnits));
-                break;
+        mapPanel.addMapSelectionListener(
+                new MapSelectionListener() {
+                    @Override
+                    public void territorySelected(final Territory territory, final MouseDetails md) {
+                        Logger.getGlobal().log(Level.INFO, "TerSelected:" + territory.getName());
+                    }
+                    @Override
+                    public void mouseEntered(@Nullable final Territory territory) {}
+                    @Override
+                    public void mouseMoved(@Nullable final Territory territory, final MouseDetails md) {}
+                });
+        mapPanel.addUnitSelectionListener(new UnitSelectionListener() {
+            @Override
+            public void unitsSelected(List<Unit> units, Territory territory, MouseDetails md) {
+                Logger.getGlobal().log(Level.INFO, "SelectedUnits:" + units.size());
+                //VUnitMover.this.OnUnitsSelected2(territory, units);
             }
-            // make sure to cycle through the front half of territories
-            if ((newFocusedIndex + 1) >= allTerritories.size()) {
-                newFocusedIndex = 0;
-            } else {
-                newFocusedIndex++;
-            }
+        });
+        gameData.addGameDataEventListener(GameDataEvent.UNIT_MOVED, ()->{
+            VUnitMover.this.OnUnitsSelected2(null, new HashSet<>());
+        });
+    }
+    public void OnUnitsSelected2(Territory ter, Set<Unit> units) {
+        if (units.size() == 0) {
+            moving_source = null;
+            moving_targetOpts.clear();
+            moving_target = null;
+            UpdateTerritoryHighlights();
+            return;
         }
-        if (newFocusedTerritory != null) {
-            // When the map is moved, the mouse is moved, we will get a territory
-            // selected event that will set the lastFocusedTerritory.
-            mapPanel.centerOn(newFocusedTerritory);
 
-            // Do an invoke later here so that these actions are after any map UI events.
-            final var selectedTerritory = newFocusedTerritory;
-            SwingUtilities.invokeLater(() -> highlightTerritory(selectedTerritory));
+        moving_source = ter;
+        moving_targetOpts.clear();
+        if (ter != null) {
+            var unitsMatchingTerType = (ArrayList<Unit>) units.stream().filter(a->UnitAttachment.get(a.getType()).getIsSea() == ter.isWater()).collect(Collectors.toList());
+            var unitsMatchingTerType_minMoveDist = 1;
+            if (unitsMatchingTerType.size() > 0) {
+                unitsMatchingTerType_minMoveDist = Math.max(1, unitsMatchingTerType.stream().map(a->a.getMovementLeft().intValue()).min(Integer::compareTo).get());
+            }
+
+            var neighbors = new ArrayList<>(mapPanel.getData().getMap().getNeighbors(ter, unitsMatchingTerType_minMoveDist));
+            neighbors = (ArrayList<Territory>) neighbors.stream().filter(a->{
+                // if land/water type matches source, consider valid movement
+                var terTypeSame = a.isWater() == ter.isWater();
+                if (terTypeSame) return true;
+
+                // if terrain-type differs, but a selected unit is transportable (ie. can cross land<>water) and target is only 1-dist away, consider valid movement
+                var hasTransportableUnit = units.stream().anyMatch(b->UnitAttachment.get(b.getType()).getTransportCost() != -1);
+                if (hasTransportableUnit && mapPanel.getData().getMap().getDistance(ter, a) == 1) return true;
+
+                return false;
+            }).collect(Collectors.toList());
+            neighbors.sort((a, b)->{
+                var aCenter = VUnitMover.this.mapPanel.getUiContext().getMapData().getCenter(a);
+                var bCenter = VUnitMover.this.mapPanel.getUiContext().getMapData().getCenter(b);
+                return Comparator.<Integer>naturalOrder().compare(aCenter.x, bCenter.x);
+            });
+            moving_targetOpts.addAll(neighbors);
+            moving_target = neighbors.get(0);
         }
+        UpdateTerritoryHighlights();
+    }
+    public ArrayList<Territory> allTerritories_sorted;
+
+    public void leftAction() {
+        changeTerritorySelection(false);
+    }
+    public void rightAction() {
+        changeTerritorySelection(true);
     }
 
-    private void highlightTerritory(final Territory territory) {
-        if (ClientSetting.unitScrollerHighlightTerritory.getValueOrThrow()) {
-            mapPanel.highlightTerritory(
-                    territory, MapPanel.AnimationDuration.STANDARD, MapPanel.HighlightDelay.SHORT_DELAY);
+    private void changeTerritorySelection(final boolean selectNext) {
+        var terSet = moving_source != null ? moving_targetOpts : allTerritories_sorted;
+        if (!selectNext) {
+            final var territories = new ArrayList<>(terSet);
+            Collections.reverse(territories);
+            terSet = territories;
         }
+        var oldTarget = moving_source != null ? moving_target : neutral_target;
+
+        // new focused index is 1 greater
+        int newTargetIndex = oldTarget == null ? 0 : terSet.indexOf(oldTarget) + 1;
+        if (newTargetIndex >= terSet.size()) {
+            // if we are larger than the number of territories, we must start back at zero
+            newTargetIndex = 0;
+        }
+        Territory newTarget = null;
+        // make sure we go through every single territory on the board
+        for (int i = 0; i < terSet.size(); i++) {
+            final Territory t = terSet.get(newTargetIndex);
+
+            var isValidNewTarget = moving_source != null ? true : !UnitScroller.main.getMovableUnits(t).isEmpty();
+            if (isValidNewTarget) {
+                newTarget = t;
+                //mapPanel.setUnitHighlight(Set.of(matchedUnits));
+                break;
+            }
+
+            // make sure to cycle through the front half of territories
+            if (newTargetIndex + 1 >= terSet.size()) {
+                newTargetIndex = 0;
+            } else {
+                newTargetIndex++;
+            }
+        }
+
+        if (moving_source != null) {
+            moving_target = newTarget;
+        } else {
+            neutral_target = newTarget;
+        }
+        //SwingUtilities.invokeLater(() -> UpdateTerritoryHighlights());
+        UpdateTerritoryHighlights();
+    }
+
+    public static Color neutral_target_color = new Color(0, 1, 0, .6f);
+    public static Color moving_targetOpts_color = new Color(1, 1, 0, .3f);
+    public static Color moving_target_color = new Color(.8f, 0, 1, .6f);
+
+    public Territory neutral_target;
+    public Territory moving_source;
+    public ArrayList<Territory> moving_targetOpts = new ArrayList<>();
+    public Territory moving_target;
+    public Boolean IsHighlighted(Territory territory) {
+        return IsHighlighted(territory.getName());
+    }
+    public Boolean IsHighlighted(String territoryName) {
+        return GetHighlightColor(territoryName) != null;
+    }
+    public Color GetHighlightColor(String territoryName) {
+        // put higher-draw-priority ones first
+        if (moving_target != null && moving_target.getName().equals(territoryName)) return moving_target_color;
+        if (moving_targetOpts.stream().anyMatch(a->a.getName().equals(territoryName))) return moving_targetOpts_color;
+        if (neutral_target != null && neutral_target.getName().equals(territoryName)) return neutral_target_color;
+        return null;
+    }
+
+    public HashSet<Territory> lastHighlightedTers = new HashSet<>();
+    private void UpdateTerritoryHighlights() {
+        //mapPanel.highlightTerritory(territory, MapPanel.AnimationDuration.STANDARD, MapPanel.HighlightDelay.SHORT_DELAY, 0);
+        //mapPanel.centerOnTerritoryIgnoringMapLock(territory);
+        /*mapPanel.highlightedTerritory = territory;
+        neutral_target = territory;
+        mapPanel.territoryHighlighter.highlight(territory, Integer.MAX_VALUE, Integer.MAX_VALUE);*/
+
+        // clear old
+        for (var ter : lastHighlightedTers) {
+            mapPanel.clearTerritoryOverlay(ter);
+        }
+
+        // set new
+        lastHighlightedTers.clear();
+        if (neutral_target != null) {
+            mapPanel.setTerritoryOverlay(neutral_target, neutral_target_color, neutral_target_color.getAlpha());
+            lastHighlightedTers.add(neutral_target);
+        }
+        for (var ter : moving_targetOpts) {
+            mapPanel.setTerritoryOverlay(ter, moving_targetOpts_color, moving_targetOpts_color.getAlpha());
+            lastHighlightedTers.add(ter);
+        }
+        if (moving_target != null) {
+            mapPanel.setTerritoryOverlay(moving_target, moving_target_color, moving_target_color.getAlpha());
+            lastHighlightedTers.add(moving_target);
+        }
+        mapPanel.paintImmediately(mapPanel.getBounds());
     }
 }

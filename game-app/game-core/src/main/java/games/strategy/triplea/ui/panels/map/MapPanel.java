@@ -25,6 +25,7 @@ import games.strategy.triplea.ui.screen.SmallMapImageManager;
 import games.strategy.triplea.ui.screen.Tile;
 import games.strategy.triplea.ui.screen.TileManager;
 import games.strategy.triplea.ui.screen.UnitsDrawer;
+import games.strategy.triplea.ui.unit.scroller.VUnitMover;
 import games.strategy.triplea.util.UnitCategory;
 import games.strategy.triplea.util.UnitSeparator;
 import games.strategy.ui.ImageScrollModel;
@@ -88,8 +89,8 @@ public class MapPanel extends ImageScrollerLargeView {
   // the territory that the mouse is currently over
   @Getter private @Nullable Territory currentTerritory;
 
-  private @Nullable Territory highlightedTerritory;
-  private final TerritoryHighlighter territoryHighlighter = new TerritoryHighlighter();
+  public @Nullable Territory highlightedTerritory;
+  public final TerritoryHighlighter territoryHighlighter = new TerritoryHighlighter();
   private final ImageScrollerSmallView smallView;
   // units the mouse is currently over
   private Tuple<Territory, List<Unit>> currentUnits;
@@ -988,13 +989,13 @@ public class MapPanel extends ImageScrollerLargeView {
     return uiContext.getMapData().getWarningImage();
   }
 
-  private final class TerritoryHighlighter {
+  public final class TerritoryHighlighter {
     private int frame;
     private int totalFrames;
     private @Nullable Territory territory;
     private final Timer timer = new Timer(500, e -> animateNextFrame());
 
-    void highlight(final Territory territory, final int totalFrames, final int delay) {
+    public void highlight(final Territory territory, final int totalFrames, final int delay) {
       stopAnimation();
       startAnimation(territory, totalFrames, delay);
     }

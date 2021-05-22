@@ -4,6 +4,7 @@ import games.strategy.engine.data.GameData;
 import games.strategy.engine.data.Territory;
 import games.strategy.triplea.ui.mapdata.MapData;
 import games.strategy.triplea.ui.screen.drawable.AbstractDrawable;
+import games.strategy.triplea.ui.unit.scroller.VUnitMover;
 import games.strategy.ui.Util;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -21,14 +22,24 @@ class TerritoryOverLayDrawable extends AbstractDrawable {
   private final Color color;
   private final Operation operation;
 
-  TerritoryOverLayDrawable(final Color color, final String name, final Operation operation) {
+  TerritoryOverLayDrawable(Color color, final String name, Operation operation) {
+    if (VUnitMover.main.IsHighlighted(name)) {
+      color = VUnitMover.main.GetHighlightColor(name);
+      operation = Operation.FILL;
+    }
+
     this.color = color;
     territoryName = name;
     this.operation = operation;
   }
 
-  TerritoryOverLayDrawable(
-      final Color color, final String name, final int alpha, final Operation operation) {
+  TerritoryOverLayDrawable(Color color, final String name, int alpha, Operation operation) {
+    if (VUnitMover.main.IsHighlighted(name)) {
+      color = VUnitMover.main.GetHighlightColor(name);
+      alpha = color.getAlpha();
+      operation = Operation.FILL;
+    }
+
     this.color = new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
     territoryName = name;
     this.operation = operation;

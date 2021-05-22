@@ -22,6 +22,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+
+import games.strategy.triplea.ui.unit.scroller.VUnitMover;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -125,6 +127,8 @@ public abstract class AbstractMovePanel extends ActionPanel {
   }
 
   protected final void cancelMove() {
+    VUnitMover.main.OnUnitsSelected2(null, new HashSet<>());
+
     cancelMoveAction();
     if (frame != null) {
       frame.clearStatusMessage();

@@ -41,7 +41,10 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeListener;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,10 +60,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.triplea.java.ObjectUtils;
@@ -275,6 +276,9 @@ public class MovePanel extends AbstractMovePanel {
               }
             }
           }
+
+          VUnitMover.main.OnUnitsSelected2(t, selectedUnits);
+
           if (!selectedUnits.isEmpty()) {
             map.notifyUnitsAreSelected();
             mouseLastUpdatePoint = mouseDetails.getMapPoint();
@@ -1567,9 +1571,41 @@ public class MovePanel extends AbstractMovePanel {
         unitScrollerAction(() -> undoableMovesPanel.undoMoves(getMap().getHighlightedUnits())));
 
 
-    SwingKeyBinding.addKeyBinding(frame, KeyCode.G, vUnitMover::leftAction);
-    SwingKeyBinding.addKeyBinding(frame, KeyCode.H, vUnitMover::rightAction);
+    /*SwingKeyBinding.addKeyBinding(frame, KeyCode.G, vUnitMover::leftAction);
+    SwingKeyBinding.addKeyBinding(frame, KeyCode.H, vUnitMover::rightAction);*/
+    var inputMap = frame.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+    inputMap.put(KeyStroke.getKeyStroke(KeyCode.G.getInputEventCode(), 0, false), "g_down");
+    inputMap.put(KeyStroke.getKeyStroke(KeyCode.G.getInputEventCode(), 0, true), "g_up");
+    inputMap.put(KeyStroke.getKeyStroke(KeyCode.H.getInputEventCode(), 0, false), "h_down");
+    inputMap.put(KeyStroke.getKeyStroke(KeyCode.H.getInputEventCode(), 0, true), "h_up");
+
+    frame.getRootPane().getActionMap().put("g_down", new AbstractAction() {
+      @Override public void actionPerformed(ActionEvent e) {
+        if (gDown) return;
+        gDown = true;
+        vUnitMover.leftAction();
+      }
+    });
+    frame.getRootPane().getActionMap().put("g_up", new AbstractAction() {
+      @Override public void actionPerformed(ActionEvent e) {
+        gDown = false;
+      }
+    });
+    frame.getRootPane().getActionMap().put("h_down", new AbstractAction() {
+      @Override public void actionPerformed(ActionEvent e) {
+        if (hDown) return;
+        hDown = true;
+        vUnitMover.rightAction();
+      }
+    });
+    frame.getRootPane().getActionMap().put("h_up", new AbstractAction() {
+      @Override public void actionPerformed(ActionEvent e) {
+        hDown = false;
+      }
+    });
   }
+  Boolean gDown = false;
+  Boolean hDown = false;
 
   /**
    * Creates an action that only fires when the move panel is visible. Note, the move panel is
