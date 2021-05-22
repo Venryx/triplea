@@ -132,12 +132,12 @@ public class VUnitMover {
         Territory newTarget = null;
         // make sure we go through every single territory on the board
         for (int i = 0; i < terSet.size(); i++) {
-            final Territory t = terSet.get(newTargetIndex);
+            final Territory ter = terSet.get(newTargetIndex);
 
-            var isValidNewTarget = moving_source != null ? true : !UnitScroller.main.getMovableUnits(t).isEmpty();
-            var isInView = true;
+            var isValidNewTarget = moving_source != null ? true : !UnitScroller.main.getMovableUnits(ter).isEmpty();
+            var isInView = mapPanel.isShowing(ter);
             if (isValidNewTarget && isInView) {
-                newTarget = t;
+                newTarget = ter;
                 //mapPanel.setUnitHighlight(Set.of(matchedUnits));
                 break;
             }
