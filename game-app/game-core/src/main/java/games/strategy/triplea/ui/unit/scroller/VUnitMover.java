@@ -101,7 +101,7 @@ public class VUnitMover {
                 return Comparator.<Integer>naturalOrder().compare(aCenter.x, bCenter.x);
             });
             moving_targetOpts.addAll(neighbors);
-            moving_target = neighbors.get(0);
+            //moving_target = neighbors.get(0);
         }
         UpdateTerritoryHighlights();
     }
@@ -135,7 +135,8 @@ public class VUnitMover {
             final Territory t = terSet.get(newTargetIndex);
 
             var isValidNewTarget = moving_source != null ? true : !UnitScroller.main.getMovableUnits(t).isEmpty();
-            if (isValidNewTarget) {
+            var isInView = true;
+            if (isValidNewTarget && isInView) {
                 newTarget = t;
                 //mapPanel.setUnitHighlight(Set.of(matchedUnits));
                 break;
@@ -158,9 +159,11 @@ public class VUnitMover {
         UpdateTerritoryHighlights();
     }
 
-    public static Color neutral_target_color = new Color(0, 1, 0, .6f);
-    public static Color moving_targetOpts_color = new Color(1, 1, 0, .3f);
-    public static Color moving_target_color = new Color(.8f, 0, 1, .6f);
+    public static Color neutral_target_color = new Color(0, 1, 0, .5f);
+    //public static Color moving_targetOpts_color = new Color(1, 1, 0, .25f);
+    //public static Color moving_targetOpts_color = new Color(.7f, 0, 1, 1f);
+    public static Color moving_targetOpts_color = new Color(1, 0, 0, 1f);
+    public static Color moving_target_color = new Color(.7f, 0, 1, .5f);
 
     public Territory neutral_target;
     public Territory moving_source;

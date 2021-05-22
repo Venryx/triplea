@@ -25,7 +25,7 @@ class TerritoryOverLayDrawable extends AbstractDrawable {
   TerritoryOverLayDrawable(Color color, final String name, Operation operation) {
     if (VUnitMover.main.IsHighlighted(name)) {
       color = VUnitMover.main.GetHighlightColor(name);
-      operation = Operation.FILL;
+      if (!color.equals(VUnitMover.moving_targetOpts_color)) operation = Operation.FILL;
     }
 
     this.color = color;
@@ -37,7 +37,7 @@ class TerritoryOverLayDrawable extends AbstractDrawable {
     if (VUnitMover.main.IsHighlighted(name)) {
       color = VUnitMover.main.GetHighlightColor(name);
       alpha = color.getAlpha();
-      operation = Operation.FILL;
+      if (!color.equals(VUnitMover.moving_targetOpts_color)) operation = Operation.FILL;
     }
 
     this.color = new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
