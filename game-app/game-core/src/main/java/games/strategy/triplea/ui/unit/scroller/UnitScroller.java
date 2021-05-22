@@ -48,6 +48,8 @@ import org.triplea.swing.jpanel.JPanelBuilder;
  * <p>The unit scroller keeps track of state to know which territory is current.
  */
 public class UnitScroller {
+  public static UnitScroller main;
+
   /** Enum to indicate combat or non-combat phase. */
   public enum MovePhase {
     COMBAT,
@@ -85,6 +87,8 @@ public class UnitScroller {
 
   public UnitScroller(
       final GameData data, final MapPanel mapPanel, final Supplier<Boolean> parentPanelIsVisible) {
+    main = this;
+
     this.gameData = data;
     this.mapPanel = mapPanel;
     this.currentPlayerSupplier = () -> gameData.getSequence().getStep().getPlayerId();
@@ -287,7 +291,7 @@ public class UnitScroller {
     centerOnNextMovableUnit();
   }
 
-  private List<Unit> getMovableUnits(final Territory territory) {
+  public List<Unit> getMovableUnits(final Territory territory) {
     if (territory == null) {
       return List.of();
     }

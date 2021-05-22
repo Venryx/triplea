@@ -33,6 +33,7 @@ import games.strategy.triplea.ui.panels.map.MapSelectionListener;
 import games.strategy.triplea.ui.panels.map.MouseOverUnitListener;
 import games.strategy.triplea.ui.panels.map.UnitSelectionListener;
 import games.strategy.triplea.ui.unit.scroller.UnitScroller;
+import games.strategy.triplea.ui.unit.scroller.VUnitMover;
 import games.strategy.triplea.util.TransportUtils;
 import games.strategy.triplea.util.UnitCategory;
 import games.strategy.triplea.util.UnitSeparator;
@@ -107,6 +108,7 @@ public class MovePanel extends AbstractMovePanel {
   private String displayText = "Combat Move";
   private MoveType moveType = MoveType.DEFAULT;
   private final UnitScroller unitScroller;
+  private final VUnitMover vUnitMover;
 
   @Getter(onMethod_ = @Override)
   private final Component unitScrollerPanel;
@@ -739,6 +741,9 @@ public class MovePanel extends AbstractMovePanel {
     unitScroller = new UnitScroller(getData(), getMap(), this::isVisible);
     unitScrollerPanel = unitScroller.build();
     unitScrollerPanel.setVisible(false);
+
+    vUnitMover = new VUnitMover(getData(), getMap(), this::isVisible);
+
     registerKeyBindings(frame);
   }
 
@@ -1560,6 +1565,10 @@ public class MovePanel extends AbstractMovePanel {
         frame,
         KeyCode.U,
         unitScrollerAction(() -> undoableMovesPanel.undoMoves(getMap().getHighlightedUnits())));
+
+
+    SwingKeyBinding.addKeyBinding(frame, KeyCode.G, vUnitMover::leftAction);
+    SwingKeyBinding.addKeyBinding(frame, KeyCode.H, vUnitMover::rightAction);
   }
 
   /**
