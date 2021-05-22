@@ -23,3 +23,7 @@ smoke-testing/src/test/resources/map-xmls/
 smoke-testing/src/test/resources/save-games/
 
 game-headed/triplea.log
+
+# v-custom
+/.build/install4j_unix.sh
+/install4j_unix.sh
